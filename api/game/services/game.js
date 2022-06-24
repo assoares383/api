@@ -6,12 +6,12 @@
  */
 
 const axios = require("axios");
+const slugify = require("slugify");
 
 async function getGameInfo(slug) {
   const jsdom = require("jsdom");
   const { JSDOM } = jsdom;
-  const body = await axios.get(`https://www.gog.com/game/${slug}`);
-  console.log(body.data)
+  const body = await axios.get(`https://www.gog.com/en/game/${slug}`);
   const dom = new JSDOM(body.data);
 
   const description = dom.window.document.querySelector('.description');
@@ -25,10 +25,20 @@ async function getGameInfo(slug) {
 
 module.exports = {
   populate: async (params) => {
-    const gogApiUrl = `https://catalog.gog.com/v1/catalog?limit=48&order=desc:trending&productType=in:game,pack,dlc,extras&page=1&countryCode=BR&locale=en-US&currencyCode=BRL`;
+    const gogApiUrl = `https://www.gog.com/games/ajax/filtered?mediaType=game&${params}`;
 
     const { data: { products }} = await axios.get(gogApiUrl);
 
-    console.log(await getGameInfo(products[0].slug));
+    await strapi.services.publisher.create({
+      name: products[0].publisher,
+      slug: slugify(products[0].publisher).toLowerCase(),
+    });
+
+    await strapi.services.developer.create({
+      name: products[0].developer,
+      slug: slugify(products[0].developer).toLowerCase(),
+    });
+
+    //console.log(await getGameInfo(products[0].slug));
   }
 };
